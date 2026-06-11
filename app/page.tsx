@@ -6,20 +6,15 @@ import ChatInput from '@/components/ChatInput';
 
 interface Message {
   id: string;
-  role: 'ai' | 'user';
+  role: 'assistant' | 'user';
   content: string;
   source?: { page: number };
   isLoading?: boolean;
 }
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'msg-1',
-      role: 'ai',
-      content: 'Olá! Sou o DocPilot. Como posso ajudar com a leitura do seu PDF hoje?',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,7 +25,7 @@ export default function Home() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = async (message: string) => {
     // Adicionar mensagem do usuário
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
@@ -38,32 +33,60 @@ export default function Home() {
       content: message,
     };
 
+    // Adicionar mensagem do usuário ao estado
     setMessages((prev) => [...prev, userMessage]);
 
-    // Adicionar loading state
+    // Incluir a mensagem do usuário no payload (setMessages é assíncrono)
+    const messagesForAPI = [...messages, userMessage];
+
+    // Adicionar mensagem de loading
     const loadingMessage: Message = {
       id: `msg-${Date.now() + 1}`,
-      role: 'ai',
+      role: 'assistant',
       content: '',
       isLoading: true,
     };
-
     setMessages((prev) => [...prev, loadingMessage]);
 
-    // Simular resposta da IA (placeholder)
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: messagesForAPI }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Remover mensagem de loading e adicionar resposta da IA
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
-          id: `msg-${Date.now() + 2}`,
-          role: 'ai',
-          content:
-            'Resposta simulada da IA. Para integrar com Gemini/LangChain, substitua este placeholder pela chamada real da API.',
-          source: { page: 4 },
+          id: `msg-${Date.now() + 1}`,
+          role: 'assistant',
+          content: data.message || data.error || 'Erro ao processar resposta',
+          isLoading: false,
         };
         return updated;
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          id: `msg-${Date.now() + 1}`,
+          role: 'assistant',
+          content: 'Desculpe, houve um erro ao processar sua solicitação. Tente novamente.',
+          isLoading: false,
+        };
+        return updated;
+      });
+    }
   };
 
   return (
