@@ -117,7 +117,14 @@ Formate as respostas usando markdown quando apropriado e não retorne imagens.
 
 INÍCIO DO CONTEXTO
 ${docsContext}
-FIM DO CONTEXTO`,
+FIM DO CONTEXTO
+
+---
+
+PERGUNTA: ${latestMessage}
+
+`,
+
     };
 
     const response = await openai.chat.completions.create({

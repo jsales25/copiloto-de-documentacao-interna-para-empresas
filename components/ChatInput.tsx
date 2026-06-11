@@ -32,7 +32,7 @@ export default function ChatInput({
           {/* Button Add (hidden on mobile) */}
           <button
             type="button"
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
+            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shrink-0"
           >
             <span className="material-symbols-outlined">add_circle</span>
           </button>
@@ -51,7 +51,7 @@ export default function ChatInput({
           <button
             type="submit"
             disabled={disabled || !input.trim()}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-white px-4 sm:px-5 py-2.5 sm:py-2 text-sm sm:text-base font-semibold transition-colors flex-shrink-0"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-white px-4 sm:px-5 py-2.5 sm:py-2 text-sm sm:text-base font-semibold transition-colors shrink-0"
           >
             <span className="hidden sm:inline">Enviar</span>
             <span className="material-symbols-outlined text-lg sm:text-xl">

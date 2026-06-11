@@ -6,11 +6,11 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 // Desestrutura as variáveis de ambiente necessárias para conexões
 // Essas variáveis devem estar definidas no arquivo .env
 const {
-  ASTRA_DB_NAMESPACE,          // Namespace do banco de dados Astra
-  ASTRA_DB_APPLICATION_TOKEN,  // Token de autenticação do Astra DB
-  ASTRA_DB_ENDPOINT,           // URL/endpoint do Astra DB
-  ASTRA_DB_COLLECTION,         // Nome da coleção onde os embeddings serão armazenados
-  OPENAI_API_KEY,              // Chave da API OpenAI para gerar embeddings
+  ASTRA_DB_NAMESPACE, // Namespace do banco de dados Astra
+  ASTRA_DB_APPLICATION_TOKEN, // Token de autenticação do Astra DB
+  ASTRA_DB_ENDPOINT, // URL/endpoint do Astra DB
+  ASTRA_DB_COLLECTION, // Nome da coleção onde os embeddings serão armazenados
+  OPENAI_API_KEY, // Chave da API OpenAI para gerar embeddings
 } = process.env;
 
 /**
@@ -138,39 +138,41 @@ type SimilarityMetric = "cosine" | "euclidean" | "dot_product";
 /**
  * Função assíncrona que cria uma coleção (tabela) no Astra DB para armazenar embeddings
  * @param similarityMetric - Métrica de similaridade a usar (padrão: dot_product)
- * 
+ *
  * O que acontece:
  * 1. Cria uma coleção com suporte a busca vetorial
  * 2. Define dimensão 1536 (tamanho do embedding do OpenAI text-embedding-3-small)
  * 3. Define a métrica de similaridade para busca
  */
-const createCollection = async (similarityMetric: SimilarityMetric = "dot_product") => {
-    // Cria a coleção no Astra DB com configurações de vector search
-    const response = await db.createCollection(ASTRA_DB_COLLECTION, {
-        vector: {
-            dimension: 1536,      // Tamanho do vetor de embedding (OpenAI padrão: 1536)
-            metric: similarityMetric // Métrica usada para medir similaridade entre vetores
-        }
-    });
+const createCollection = async (
+  similarityMetric: SimilarityMetric = "dot_product",
+) => {
+  // Cria a coleção no Astra DB com configurações de vector search
+  const response = await db.createCollection(ASTRA_DB_COLLECTION, {
+    vector: {
+      dimension: 1536, // Tamanho do vetor de embedding (OpenAI padrão: 1536)
+      metric: similarityMetric, // Métrica usada para medir similaridade entre vetores
+    },
+  });
 
-    console.log(response);
-}
+  console.log(response);
+};
 
 /**
  * RECURSIVE CHARACTER TEXT SPLITTER (Divisor de Texto Recursivo)
- * 
+ *
  * Este é um dos componentes mais importantes do pipeline RAG (Retrieval-Augmented Generation)
- * 
+ *
  * O que faz:
  * - Divide textos grandes em pedaços menores (chunks) de forma inteligente
  * - Mantém o contexto preservando estrutura semântica do texto
  * - Evita cortar frases ou parágrafos no meio
- * 
+ *
  * Por que é necessário:
  * - Modelos de IA têm limite de tokens que podem processar
  * - Chunks menores geram embeddings mais precisos e relevantes
  * - Facilita buscas semânticas mais eficientes
- * 
+ *
  * Configuração:
  */
 const splitter = new RecursiveCharacterTextSplitter({
@@ -187,7 +189,7 @@ const splitter = new RecursiveCharacterTextSplitter({
    * Define quanto de sobreposição (overlap) entre chunks consecutivos
    * 100 caracteres de sobreposição garantem contexto entre chunks
    * Evita perder informações quando um chunk termina e outro começa
-   * 
+   *
    * Exemplo:
    * Chunk 1: "...Lorem ipsum dolor sit amet consectetur...ÚLTIMO 100 CHARS"
    * Chunk 2: "PRIMEIRO 100 CHARS...elit sed do eiusmod tempor..."
@@ -197,33 +199,33 @@ const splitter = new RecursiveCharacterTextSplitter({
 });
 
 const loadSampleData = async () => {
-    const collection = await db.collection(ASTRA_DB_COLLECTION)
+  const collection = await db.collection(ASTRA_DB_COLLECTION);
 
-    console.log(`Carregando dados de ${ docsData.length } documentos...`);
+  console.log(`Carregando dados de ${docsData.length} documentos...`);
 
-    // aqui entra a parte do langchain para dividir, criar embeddings e salvar no Astra DB
-    const chunks = await splitter.splitText(docsData[0]);
+  // aqui entra a parte do langchain para dividir, criar embeddings e salvar no Astra DB
+  const chunks = await splitter.splitText(docsData[0]);
 
-    console.log("chunks", chunks);
-    
+  console.log("chunks", chunks);
+
+  for await (const chunk of chunks) {
     // cria os embeddings para cada chunk
     const embeddings = await openai.embeddings.create({
-        model: "text-embedding-3-small", // modelo de embedding leve e eficiente
-        input: chunks, // array de chunks de texto
-        encoding_format: "float" // formato de saída como array de floats
-    })
+      model: "text-embedding-3-small", // modelo de embedding leve e eficiente
+      input: chunk, // array de chunks de texto
+      encoding_format: "float", // formato de saída como array de floats
+    });
 
     const vector = embeddings.data[0].embedding; // pega o vetor do primeiro chunk
 
     // salva cada chunk com seu embedding no Astra DB
     const responseDb = await collection.insertOne({
-        $vector: vector, // vetor de embedding
-        text: chunks, // texto do chunk
-    })
+      $vector: vector, // vetor de embedding
+      text: chunk, // texto do chunk
+    });
 
     console.log("responseDb", responseDb);
-}
+  }
+};
 
 createCollection().then(() => loadSampleData());
-
-
