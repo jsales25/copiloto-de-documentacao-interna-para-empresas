@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DocPilot
 
-## Getting Started
+## Resumo do projeto
 
-First, run the development server:
+O DocPilot é uma aplicação web que transforma documentos empresariais em uma base de conhecimento conversacional. A ideia é permitir que usuários façam perguntas em linguagem natural e recebam respostas fundamentadas em conteúdos previamente carregados, como políticas, manuais, guias e documentos internos.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## O que ele faz e para que serve
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Essa aplicação funciona como um assistente inteligente para documentação interna. Ela permite:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- fazer upload de arquivos em diferentes formatos;
+- indexar o conteúdo dos documentos para recuperação semântica;
+- responder perguntas com base no contexto fornecido pelos arquivos;
+- facilitar o acesso rápido a informações importantes sem precisar ler tudo manualmente.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+É ideal para empresas, times de suporte, equipes de produto ou qualquer cenário em que a documentação seja volumosa e precise de buscas rápidas e inteligentes.
 
-## Learn More
+## Screenshot
 
-To learn more about Next.js, take a look at the following resources:
+![Interface do DocPilot](public/docpilot-screenshot.svg)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tecnologias utilizadas
 
-## Deploy on Vercel
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- OpenAI API
+- Astra DB
+- LangChain
+- PDF / DOCX parsing
+- Node.js
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## O que eu aprendi
+
+Durante o desenvolvimento deste projeto, aprendi a:
+
+- integrar IA generativa com aplicações web reais;
+- trabalhar com recuperação de informação com embeddings;
+- criar fluxos de upload e processamento de documentos;
+- estruturar uma aplicação full stack com Next.js e APIs server-side;
+- lidar com segurança de credenciais e arquitetura de backend.
+
+## Autora
+
+Desenvolvido por Julia Sales.
+
+- GitHub: [Link do perfil do GitHub aqui](https://github.com/jsales25)
+- LinkedIn: [Link do perfil do LinkedIn aqui](https://www.linkedin.com/in/julia-sales-developer)
+
+---
+
+<div align="center">
+  Feito com 💜 por Julia Sales
+</div>
+
+<!-- ## Observações
+
+Este projeto pode ser expandido com autenticação de usuários, histórico de conversas, suporte a mais formatos de arquivo e melhorias na experiência de busca. -->
