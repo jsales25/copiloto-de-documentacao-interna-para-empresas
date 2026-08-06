@@ -10,17 +10,9 @@
 
 import "dotenv/config";
 import OpenAI from "openai";
-import { DataAPIClient } from "@datastax/astra-db-ts";
+import { getAstraCollection } from "../../../lib/astra";
 
-// Desestrutura as variáveis de ambiente necessárias para conexões
-// Essas variáveis devem estar definidas no arquivo .env
-const {
-  ASTRA_DB_NAMESPACE, // Namespace do banco de dados Astra
-  ASTRA_DB_APPLICATION_TOKEN, // Token de autenticação do Astra DB
-  ASTRA_DB_ENDPOINT, // URL/endpoint do Astra DB
-  ASTRA_DB_COLLECTION, // Nome da coleção onde os embeddings serão armazenados
-  OPENAI_API_KEY, // Chave da API OpenAI para gerar embeddings
-} = process.env;
+const { OPENAI_API_KEY } = process.env;
 
 console.log("OPENAI_API_KEY", OPENAI_API_KEY);
 
@@ -32,18 +24,6 @@ console.log("OPENAI_API_KEY", OPENAI_API_KEY);
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
-
-/**
- * Inicializa o cliente do Astra DB (banco de dados vetorial)
- * O Astra DB é otimizado para armazenar e buscar vetores (embeddings)
- */
-const astraClient = new DataAPIClient(ASTRA_DB_APPLICATION_TOKEN);
-
-/**
- * Conecta ao banco de dados específico no Astra usando o namespace
- * O namespace é um espaço lógico isolado dentro do Astra DB
- */
-const db = astraClient.db(ASTRA_DB_ENDPOINT, { keyspace: ASTRA_DB_NAMESPACE });
 
 export async function POST(request: Request) {
   try {
@@ -72,7 +52,7 @@ export async function POST(request: Request) {
     // ======================================================================== //
 
     try {
-      const collection = db.collection(ASTRA_DB_COLLECTION);
+      const collection = getAstraCollection();
 
       const similarDocs = await collection.find(null, {
         sort: {
@@ -85,7 +65,7 @@ export async function POST(request: Request) {
       const documents = await similarDocs.toArray();
       console.log("Documentos encontrados:", documents.length);
       console.log("Documentos:", JSON.stringify(documents, null, 2));
-      
+
       const docsMap = documents.map((doc) => doc.text);
 
       docsContext = JSON.stringify(docsMap);
@@ -124,7 +104,6 @@ FIM DO CONTEXTO
 PERGUNTA: ${latestMessage}
 
 `,
-
     };
 
     const response = await openai.chat.completions.create({
@@ -140,7 +119,6 @@ PERGUNTA: ${latestMessage}
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Erro no endpoint /api/chat:", errorMessage);

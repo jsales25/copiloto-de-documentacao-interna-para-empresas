@@ -19,7 +19,6 @@ Essa aplicação funciona como um assistente inteligente para documentação int
 
 ![Interface do DocPilot](public/docpilot-screenshot.svg)
 
-
 ## Tecnologias utilizadas
 
 - Next.js 16
@@ -32,6 +31,69 @@ Essa aplicação funciona como um assistente inteligente para documentação int
 - PDF / DOCX parsing
 - Node.js
 
+## Variáveis de ambiente
+
+Configure estas variáveis em seu arquivo .env local:
+
+- ASTRA_DB_ENDPOINT: endpoint do banco Astra DB
+- ASTRA_DB_NAMESPACE: namespace/keyspace do banco Astra DB
+- ASTRA_DB_APPLICATION_TOKEN: token da aplicação Astra DB
+- ASTRA_DB_COLLECTION: coleção usada para armazenar embeddings
+- OPENAI_API_KEY: chave da API da OpenAI
+- KEEPALIVE_SECRET: segredo compartilhado para proteger a rota /api/keepalive
+
+Na Vercel, configure as mesmas variáveis em Project Settings > Environment Variables.
+
+No GitHub, adicione:
+
+- KEEPALIVE_SECRET em Secrets
+- KEEPALIVE_URL em Secrets (URL pública da aplicação, por exemplo https://seu-app.vercel.app/api/keepalive)
+
+## Como testar o keep alive
+
+### 1. Localmente
+
+Execute a aplicação localmente e faça uma chamada com o header correto:
+
+```bash
+curl -i http://localhost:3000/api/keepalive \
+  -H "x-keepalive-secret: seu-segredo"
+```
+
+Resposta esperada:
+
+```json
+{
+  "success": true,
+  "message": "Astra DB is alive",
+  "timestamp": "..."
+}
+```
+
+### 2. Na Vercel
+
+Depois do deploy, teste a URL pública:
+
+```bash
+curl -i https://seu-app.vercel.app/api/keepalive \
+  -H "x-keepalive-secret: seu-segredo"
+```
+
+### 3. No GitHub Actions
+
+O workflow em .github/workflows/keepalive.yml executa diariamente. Para validar manualmente:
+
+1. Acesse a aba Actions do repositório
+2. Selecione "Keep Astra DB Alive"
+3. Clique em "Run workflow"
+
+Se a resposta retornar HTTP 200, o workflow passa. Se a rota falhar, o workflow falha.
+
+## Como validar que não houve consumo de créditos da OpenAI ou Gemini
+
+- A rota /api/keepalive não chama OpenAI, Gemini, LangChain, embeddings nem RAG.
+- Ela apenas executa uma leitura simples na coleção do Astra DB.
+- Portanto, não deve consumir créditos de OpenAI nem Gemini.
 
 ## O que eu aprendi
 

@@ -1,0 +1,16 @@
+name: Keep Astra DB Alive
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger keepalive endpoint
+        run: |
+          curl --fail --silent --show-error \
+            -H "x-keepalive-secret: ${{ secrets.KEEPALIVE_SECRET }}" \
+            "${{ secrets.KEEPALIVE_URL }}"

@@ -15,9 +15,9 @@ import "dotenv/config";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import OpenAI from "openai";
-import { DataAPIClient } from "@datastax/astra-db-ts";
 import JSZip from "jszip";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { getAstraCollection } from "../../../lib/astra";
 
 // Para DOCX - usar uma biblioteca simples de parsing
 async function extractTextFromDocx(buffer: Buffer): Promise<string> {
@@ -71,11 +71,6 @@ async function chunkText(text: string): Promise<string[]> {
 // Inicializar clientes
 const openaiClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
-
-const astraDbClient = new DataAPIClient(process.env.ASTRA_DB_APPLICATION_TOKEN);
-const database = astraDbClient.db(process.env.ASTRA_DB_ENDPOINT, {
-  keyspace: process.env.ASTRA_DB_NAMESPACE,
 });
 
 export async function POST(request: Request) {
@@ -173,11 +168,10 @@ export async function POST(request: Request) {
     // ETAPA 3️⃣: GERAR EMBEDDINGS E ARMAZENAR NO ASTRA DB
     // ======================================================================== //
 
-    const collection = database.collection(process.env.ASTRA_DB_COLLECTION);
+    const collection = getAstraCollection();
 
     try {
-
-        console.log("chunks gerados", chunks);
+      console.log("chunks gerados", chunks);
 
       for await (const chunk of chunks) {
         // Gerar embedding para o chunk
