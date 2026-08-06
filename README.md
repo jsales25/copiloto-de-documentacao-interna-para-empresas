@@ -2,58 +2,122 @@
 
 ## Resumo do projeto
 
-O DocPilot é uma aplicação web que transforma documentos empresariais em uma base de conhecimento conversacional. A ideia é permitir que usuários façam perguntas em linguagem natural e recebam respostas fundamentadas em conteúdos previamente carregados, como políticas, manuais, guias e documentos internos.
+O **DocPilot** é uma aplicação web que transforma documentos empresariais em uma base de conhecimento conversacional. A aplicação utiliza Inteligência Artificial para permitir que usuários façam perguntas em linguagem natural e recebam respostas fundamentadas nos documentos previamente enviados.
 
-## O que ele faz e para que serve
+## O que ele faz
 
-Essa aplicação funciona como um assistente inteligente para documentação interna. Ela permite:
+O DocPilot funciona como um assistente inteligente para documentação interna, permitindo:
 
-- fazer upload de arquivos em diferentes formatos;
-- indexar o conteúdo dos documentos para recuperação semântica;
-- responder perguntas com base no contexto fornecido pelos arquivos;
-- facilitar o acesso rápido a informações importantes sem precisar ler tudo manualmente.
+* upload de arquivos PDF e DOCX;
+* processamento e indexação do conteúdo dos documentos;
+* recuperação semântica utilizando banco de vetores;
+* respostas contextualizadas com IA;
+* acesso rápido a informações sem a necessidade de ler documentos completos.
 
-É ideal para empresas, times de suporte, equipes de produto ou qualquer cenário em que a documentação seja volumosa e precise de buscas rápidas e inteligentes.
+É uma solução indicada para empresas, equipes de suporte, times de produto, departamentos jurídicos e qualquer cenário que envolva documentação extensa.
+
+---
 
 ## Screenshot
 
 ![Interface do DocPilot](public/docpilot-screenshot.svg)
 
+---
+
 ## Tecnologias utilizadas
 
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS
-- OpenAI API
-- Astra DB
-- LangChain
-- PDF / DOCX parsing
-- Node.js
+### Front-end
 
-## Variáveis de ambiente
+* Next.js 16
+* React 19
+* TypeScript
+* Tailwind CSS
 
-Configure estas variáveis em seu arquivo .env local:
+### Inteligência Artificial
 
-- ASTRA_DB_ENDPOINT: endpoint do banco Astra DB
-- ASTRA_DB_NAMESPACE: namespace/keyspace do banco Astra DB
-- ASTRA_DB_APPLICATION_TOKEN: token da aplicação Astra DB
-- ASTRA_DB_COLLECTION: coleção usada para armazenar embeddings
-- OPENAI_API_KEY: chave da API da OpenAI
-- KEEPALIVE_SECRET: segredo compartilhado para proteger a rota /api/keepalive
+* OpenAI API
+* LangChain
+* RAG
 
-Na Vercel, configure as mesmas variáveis em Project Settings > Environment Variables.
+### Banco de dados vetorial
 
-No GitHub, adicione:
+* Astra DB
 
-- KEEPALIVE_SECRET em Secrets
-- KEEPALIVE_URL em Secrets (URL pública da aplicação, por exemplo https://seu-app.vercel.app/api/keepalive)
+### Processamento de documentos
 
-## Como testar o keep alive
+* PDF Parser
+* DOCX Parser
 
-### 1. Localmente
+### Back-end
 
-Execute a aplicação localmente e faça uma chamada com o header correto:
+* Node.js
+* API Routes do Next.js
+
+### Infraestrutura
+
+* Vercel
+* GitHub Actions
+
+---
+
+## Arquitetura da aplicação
+
+O fluxo principal da aplicação funciona da seguinte forma:
+
+1. O usuário realiza o upload de um documento.
+2. O documento é processado e dividido em trechos.
+3. Os embeddings são gerados utilizando IA.
+4. Os vetores são armazenados no Astra DB.
+5. Quando uma pergunta é realizada, a aplicação busca os trechos mais relevantes.
+6. A IA utiliza esse contexto para gerar uma resposta fundamentada.
+
+---
+
+## Keep Alive do Astra DB
+
+O Astra DB possui uma política que pode agendar a exclusão automática de bancos de dados gratuitos após um longo período de inatividade.
+
+Para evitar esse problema, o projeto implementa um mecanismo automático de **Keep Alive**, que mantém o banco ativo sem consumir créditos da OpenAI ou de outros provedores de IA.
+
+### Como funciona
+
+Todos os dias um **GitHub Actions** executa automaticamente uma chamada para a rota protegida:
+
+```text
+GET /api/keepalive
+```
+
+Essa rota:
+
+* valida uma chave secreta enviada no header (`x-keepalive-secret`);
+* realiza apenas uma consulta simples (`findOne`) no Astra DB;
+* retorna uma resposta HTTP 200 quando a conexão está funcionando.
+
+Como nenhuma chamada para OpenAI, LangChain ou geração de embeddings é realizada, esse processo **não consome créditos de IA**.
+
+Fluxo da solução:
+
+```text
+GitHub Actions
+        │
+        ▼
+/api/keepalive (Vercel)
+        │
+        ▼
+Validação do KEEPALIVE_SECRET
+        │
+        ▼
+Consulta simples no Astra DB
+        │
+        ▼
+HTTP 200 OK
+```
+
+---
+
+## Como testar o Keep Alive
+
+### Localmente
 
 ```bash
 curl -i http://localhost:3000/api/keepalive \
@@ -70,24 +134,46 @@ Resposta esperada:
 }
 ```
 
-### 2. Na Vercel
-
-Depois do deploy, teste a URL pública:
+### Produção (Vercel)
 
 ```bash
-curl -i https://seu-app.vercel.app/api/keepalive \
+curl -i https://doc-copilot-nine.vercel.app/api/keepalive \
   -H "x-keepalive-secret: seu-segredo"
 ```
 
-### 3. No GitHub Actions
+### GitHub Actions
 
-O workflow em .github/workflows/keepalive.yml executa diariamente. Para validar manualmente:
+O workflow localizado em:
 
-1. Acesse a aba Actions do repositório
-2. Selecione "Keep Astra DB Alive"
-3. Clique em "Run workflow"
+```text
+.github/workflows/keepalive.yml
+```
 
-Se a resposta retornar HTTP 200, o workflow passa. Se a rota falhar, o workflow falha.
+é executado automaticamente todos os dias.
+
+Também é possível executá-lo manualmente:
+
+1. Abra a aba **Actions** do repositório.
+2. Selecione **Keep Astra DB Alive**.
+3. Clique em **Run workflow**.
+
+Se a rota retornar **HTTP 200**, o workflow será concluído com sucesso.
+
+---
+
+## Segurança
+
+A rota `/api/keepalive` não é pública.
+
+Ela exige autenticação por meio da variável de ambiente `KEEPALIVE_SECRET`, enviada através do header:
+
+```text
+x-keepalive-secret
+```
+
+Sem essa chave, a rota responde com **HTTP 401 Unauthorized**.
+
+---
 
 ## Como validar que não houve consumo de créditos da OpenAI ou Gemini
 
@@ -95,29 +181,46 @@ Se a resposta retornar HTTP 200, o workflow passa. Se a rota falhar, o workflow 
 - Ela apenas executa uma leitura simples na coleção do Astra DB.
 - Portanto, não deve consumir créditos de OpenAI nem Gemini.
 
-## O que eu aprendi
+## O que aprendi
 
-Durante o desenvolvimento deste projeto, aprendi a:
+Durante o desenvolvimento deste projeto aprofundei conhecimentos em:
 
-- integrar IA generativa com aplicações web reais;
-- trabalhar com recuperação de informação com embeddings;
-- criar fluxos de upload e processamento de documentos;
-- estruturar uma aplicação full stack com Next.js e APIs server-side;
-- lidar com segurança de credenciais e arquitetura de backend.
+* aplicações Full Stack com Next.js;
+* integração de IA generativa utilizando OpenAI;
+* recuperação semântica com banco de vetores;
+* processamento de documentos PDF e DOCX;
+* arquitetura de aplicações baseadas em RAG;
+* integração com Astra DB;
+* deploy de aplicações na Vercel;
+* automação de infraestrutura utilizando GitHub Actions;
+* gerenciamento seguro de variáveis de ambiente;
+* boas práticas para manutenção de aplicações em produção.
+
+---
+
+## Melhorias futuras
+
+Algumas evoluções planejadas para o projeto:
+
+* autenticação de usuários;
+* histórico de conversas;
+* suporte a mais formatos de documentos;
+* múltiplas bases de conhecimento;
+* streaming de respostas;
+* cache de consultas;
+* monitoramento e métricas.
+
+---
 
 ## Autora
 
-Desenvolvido por Julia Sales.
+Desenvolvido por **Julia Sales**.
 
-- GitHub: [Link do perfil do GitHub aqui](https://github.com/jsales25)
-- LinkedIn: [Link do perfil do LinkedIn aqui](https://www.linkedin.com/in/julia-sales-developer)
+* GitHub: https://github.com/jsales25
+* LinkedIn: https://www.linkedin.com/in/julia-sales-developer
 
 ---
 
 <div align="center">
   Feito com 💜 por Julia Sales
 </div>
-
-<!-- ## Observações
-
-Este projeto pode ser expandido com autenticação de usuários, histórico de conversas, suporte a mais formatos de arquivo e melhorias na experiência de busca. -->
